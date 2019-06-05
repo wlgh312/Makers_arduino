@@ -9,7 +9,8 @@ const long delayTime_window = 8000;
 int blueTx=2;   //Tx (보내는핀 설정)
 int blueRx=3;   //Rx (받는핀 설정)
 SoftwareSerial BTSerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
-int res=2038;
+const int res=2038;
+int real_res=0;
 Stepper stepper(res, 10, 5, 9, 4);//IN4, IN2, IN3, IN1
 int windowState=0;//창문상태
 int outState=0;//외출상태
@@ -29,7 +30,7 @@ int echoPin = 12;//Echo
 long duration, cm;
 String data = "";//입력받은 command
 unsigned long prev_time_app = 0;
-unsigned long prev_time_window = 0;
+//unsigned long prev_time_window = 0;
 
 void setup() {
   BTSerial.begin(9600);//블루투스 시리얼
@@ -105,26 +106,28 @@ void loop() {
       prev_time_app = millis();
     }//delay
 
-    if(millis() - prev_time_window >= delayTime_window){
+    //if(millis() - prev_time_window >= delayTime_window){
       //창문 자동 작동
       if (inDust>outDust and hum<=60){//내부미세먼지가 높고 습도가 낮으면
         if(windowState==0){//창문이 닫혀있을때
-          stepper.step(res);//창문열기 
+          stepper.step(real_res);//창문열기 
           windowState=1;
+          BTSerial.print("open!");
         }
       }
       else if(inDust<outDust or hum>60){//외부미세먼지가 높거나 습도가 높으면
         if(windowState==1){//창문이 열려있을때
-          stepper.step(-res);//창문닫기
+          stepper.step(-real_res);//창문닫기
           windowState=0;
+          BTSerial.print("close!");
         }
       }
-      prev_time_window = millis();
-    }
+      //prev_time_window = millis();
+    //}
 
     //방범
     if(outState==1){
-      if(cm<=5){//초음파센서에 걸림
+      if(cm<=2){//초음파센서에 걸림
         BTSerial.print("Invade!!!");
       }
     }
@@ -144,14 +147,14 @@ void loop() {
     if(data=="open"){//창문열기
       Serial.print("open");
       if(windowState == 0){//창문이 닫혀있으면
-        stepper.step(res);
+        stepper.step(real_res);
         windowState=1;
       }
       data="";
     }
     else if(data=="close"){//창문닫기
       if(windowState == 1){//창문이 열려있으면
-        stepper.step(-res);
+        stepper.step(-real_res);
         windowState=0;
       }
       data="";
@@ -159,7 +162,7 @@ void loop() {
     else if(data=="nightOff"){//밤에 사용X
       if(hour()>=0 and hour()<=7){//밤에
         if(windowState==1){//창문에 열려있으면
-          stepper.step(-res);//창문닫기
+          stepper.step(-real_res);//창문닫기
           windowState=0;
         }
       }
@@ -174,17 +177,17 @@ void loop() {
       data="";
     }
     else if(data=="one"){//창문 1단계
-      res=2038;
+      real_res=1200;
       data="";
     }
     else if(data=="two"){//창문 2단계
-      Serial.print(res);
-      res=2038*2;
-      Serial.print(res);
+      Serial.print(real_res);
+      real_res=2400;
+      Serial.print(real_res);
       data="";
     }
     else if(data=="three"){//창문 3단계
-      res=2038*3;
+      real_res=3600;
       data="";
     }
   }
