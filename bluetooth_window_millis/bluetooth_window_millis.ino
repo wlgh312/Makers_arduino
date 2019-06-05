@@ -1,11 +1,10 @@
 #include <DHT11.h>
-#include <Time.h>
-#include <TimeLib.h>
+//#include <Time.h>
+//#include <TimeLib.h>
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 #include <Stepper.h>
 
 const long delayTime_app = 5000;
-const long delayTime_window = 8000;
 int blueTx=2;   //Tx (보내는핀 설정)
 int blueRx=3;   //Rx (받는핀 설정)
 SoftwareSerial BTSerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
@@ -21,7 +20,7 @@ unsigned long pulse2 = 0;
 float inDust=0;//ugm3
 float outDust=0;
 //온습도센서
-float hum=0;
+float temp, humi;
 int pin=7;
 DHT11 dht11(pin);
 //초음파센서
@@ -30,7 +29,6 @@ int echoPin = 12;//Echo
 long duration, cm;
 String data = "";//입력받은 command
 unsigned long prev_time_app = 0;
-//unsigned long prev_time_window = 0;
 
 void setup() {
   BTSerial.begin(9600);//블루투스 시리얼
@@ -39,7 +37,7 @@ void setup() {
   pinMode(6,INPUT);//외부미세먼지센서
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  stepper.setSpeed(12);
+  stepper.setSpeed(10);
 }
 void loop() {
 
@@ -62,7 +60,6 @@ void loop() {
       pulse2=pulseIn(6, LOW, 20000);
       outDust=pulse2ugm3(pulse2);
       //온습도센서
-      float temp, humi;
       dht11.read(humi,temp);      
       //내부미세먼지센서값 어플에 출력
       BTSerial.print("\nIn dust : ");
@@ -103,31 +100,30 @@ void loop() {
       BTSerial.print("humidity : ");
       BTSerial.print(humi);
       BTSerial.print("%\n");
+      Serial.print("\nHumi : ");
+      Serial.print(humi);
       prev_time_app = millis();
     }//delay
 
-    //if(millis() - prev_time_window >= delayTime_window){
-      //창문 자동 작동
-      if (inDust>outDust and hum<=60){//내부미세먼지가 높고 습도가 낮으면
+    //창문 자동 작동
+      if ( inDust>outDust ){//내부미세먼지가 높고 습도가 낮으면
         if(windowState==0){//창문이 닫혀있을때
-          stepper.step(real_res);//창문열기 
+          stepper.step(real_res);//창문열기
           windowState=1;
           BTSerial.print("open!");
         }
-      }
-      else if(inDust<outDust or hum>60){//외부미세먼지가 높거나 습도가 높으면
+      }      
+      else if ( inDust<outDust ){//외부미세먼지가 높거나 습도가 높으면
         if(windowState==1){//창문이 열려있을때
           stepper.step(-real_res);//창문닫기
           windowState=0;
           BTSerial.print("close!");
         }
       }
-      //prev_time_window = millis();
-    //}
 
     //방범
     if(outState==1){
-      if(cm<=2){//초음파센서에 걸림
+      if(cm<=3){//초음파센서에 걸림
         BTSerial.print("Invade!!!");
       }
     }
@@ -156,38 +152,31 @@ void loop() {
       if(windowState == 1){//창문이 열려있으면
         stepper.step(-real_res);
         windowState=0;
-      }
-      data="";
-    }
-    else if(data=="nightOff"){//밤에 사용X
-      if(hour()>=0 and hour()<=7){//밤에
-        if(windowState==1){//창문에 열려있으면
-          stepper.step(-real_res);//창문닫기
-          windowState=0;
-        }
+        Serial.print("!!!!");
       }
       data="";
     }
     else if(data=="out"){//외출
+      Serial.print("out!!!");
       outState=1;
       data="";
     }
-    else if(data="in"){
+    else if(data=="in"){
       outState=0;
       data="";
     }
     else if(data=="one"){//창문 1단계
-      real_res=1200;
+      real_res=(res*2)/3;
       data="";
     }
     else if(data=="two"){//창문 2단계
-      Serial.print(real_res);
-      real_res=2400;
-      Serial.print(real_res);
+      Serial.print(res);
+      real_res=((res*2)/3)*2;
+      Serial.print(res);
       data="";
     }
     else if(data=="three"){//창문 3단계
-      real_res=3600;
+      real_res=res*2;
       data="";
     }
   }
