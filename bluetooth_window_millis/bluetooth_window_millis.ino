@@ -1,6 +1,4 @@
 #include <DHT11.h>
-//#include <Time.h>
-//#include <TimeLib.h>
 #include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 #include <Stepper.h>
 
