@@ -8,4 +8,4 @@
 1) 3D print를 이용하여 창문 제작  
 2) 온습도 센서, 미세먼지 센서, 초음파 센서 사용  
 3) 블루투스 연결
-<br><img height="300" src="https://github.com/wlgh312/Makers_arduino/tree/master/result/invade.jpg"></img><br>
+<br><img height="300" src="https://github.com/wlgh312/Makers_arduino/blob/master/result/invade.jpg"></img><br>
